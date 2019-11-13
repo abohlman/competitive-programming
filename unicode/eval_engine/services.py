@@ -18,7 +18,7 @@ lang = {
 }
 
 
-# Makes the post request to the API and returns an object containing the API output
+# Makes the post request to the API and returns an object containing the API output. This is called by eval_setup in this file
 def eval_engine(source, lang, test_in, test_out):
     params = {
         'source_code': source,
@@ -41,6 +41,14 @@ def eval_setup(submission_id):
         eval_object = eval_engine(source, lang[language], case.test_input, case.test_output)
 
         if 'Error' in eval_object['status']['description']:
-            print('Compile Failed')
+            error= eval_object['status']['description']
+            return {'error': error}
+        elif eval_object['status']['description']=="Wrong Answer":
+            status='fail'
         else:
-            print(eval_object['status']['description'])
+            status='pass'
+        
+        #Adds test case object to result every iteration
+        result[index]=({"test_input":test_input,"test_output":test_output,"status":status})
+        index+=1
+    return result
