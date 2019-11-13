@@ -1,10 +1,6 @@
 import requests
-from eval_engine.settings import url
-from editor.models import UserSubmission
-from problems.models import Problem
-from problems.models import ProblemTestCase
+from unicode import settings
 
-# Judge0 assigns an integer to each supported language
 lang = {
     'C': 4,
     'C++': 10,
@@ -17,38 +13,53 @@ lang = {
     'Ruby': 38
 }
 
-
-# Makes the post request to the API and returns an object containing the API output. This is called by eval_setup in this file
 def eval_engine(source, lang, test_in, test_out):
+    url = settings.CODE_EVAL_API_URL
+    route = '/submissions/?base64_encoded=false&wait=true'   # wait=true makes the API call synchronous, halving the number of requests needed
     params = {
         'source_code': source,
         'language_id': lang,
         'stdin': test_in,
         'expected_output': test_out
     }
-    return requests.post(url, params=params).json()   # Sends the post request to the api
+    r = requests.post(url+route, params=params)
+    eval_output = r.json()
+    return eval_output
 
 
-# Function called by view.py in the editor. Submission_id is the primary key of the UserSubmission table
-def eval_setup(submission_id):
-    sub = UserSubmission.objects.get(id = submission_id)    # Gets an objects of all the attributes of the submission_id in UserSubmission
-    source = sub.submission
-    language = sub.language
-    # user = sub.submitter
-    test_cases = ProblemTestCase.objects.filter(problem = sub.problem)
+def eval_setup(submission):
+    submission_info = submission['user_submission']
+    test_cases = submission['test_cases']
+
+    source_code = submission_info.submission
+    language = submission_info.language
+    
+    '''
+    Collects all test case statuses in one object
+    '''
+    
+    test_results = {}
+    index = 0
 
     for case in test_cases:
-        eval_object = eval_engine(source, lang[language], case.test_input, case.test_output)
+        eval_object = eval_engine(source_code, lang[language], case.test_input, case.test_output)
+        print(eval_object)
 
+        #Checks for error
         if 'Error' in eval_object['status']['description']:
-            error= eval_object['status']['description']
+            error = eval_object['status']['description']
             return {'error': error}
-        elif eval_object['status']['description']=="Wrong Answer":
-            status='fail'
+        elif eval_object['status']['description'] == "Wrong Answer":
+            status = 'fail'
         else:
-            status='pass'
+            status = 'pass'
         
         #Adds test case object to result every iteration
-        result[index]=({"test_input":test_input,"test_output":test_output,"status":status})
-        index+=1
-    return result
+        test_results[index] = {
+                    "test_input": case.test_input,
+                    "test_output": case.test_output,
+                    "status": status
+                }
+        index += 1
+        
+    return test_results
