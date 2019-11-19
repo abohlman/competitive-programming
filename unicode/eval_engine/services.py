@@ -1,5 +1,5 @@
 import requests
-from . import settings
+from unicode import settings
 import sys 
 from termcolor import colored, cprint 
 import re
@@ -84,5 +84,11 @@ def format_source_code(language_id, code, test_input):
         test_function = test_function.replace("\\","")
         api_test = code + "\n"+ test_function
         return api_test
+
+    elif language_id == 26: #Java
+        result = re.search('def (.*):', code)
+        temp = result.group(1)
+        test_function = "System.out.println(" + test_inputs + ");"
+        api_test = code + test_function
     else:
         return code
