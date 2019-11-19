@@ -80,9 +80,9 @@ def format_source_code(language_id, code, test_input):
     if language_id == 34: #Python
         result = re.search('def (.*):', code)
         temp= result.group(1)
-        test_function="print("+re.sub(r'\([^)]*\)', '', temp) + "('"+ test_input+"'))"
-        test_function=test_function.replace("\\","")
-        api_test= code+ "\n"+ test_function
+        test_function = "print("+re.sub(r'\([^)]*\)', '', temp) + "('"+ test_input+"'))"
+        test_function = test_function.replace("\\","")
+        api_test = code + "\n"+ test_function
         return api_test
     else:
         return code
